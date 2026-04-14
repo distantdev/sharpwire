@@ -25,8 +25,7 @@ Output folder:
 ## App updater behavior
 
 - Updater implementation: `Core/Update/VelopackUpdateService.cs`
-- Settings model key:
-  - `EnableAutoUpdateChecks`
+- App setting in `Core/SettingsManager.cs`: `EnableAutoUpdateChecks` — persisted with other user settings; turns automatic background update checks on or off (the Updates section in Settings binds here).
 - Update feed URL:
   - `https://github.com/distantdev/sharpwire`
 
