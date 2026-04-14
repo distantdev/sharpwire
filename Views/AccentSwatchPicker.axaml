@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Sharpwire.ViewModels"
+             x:Class="Sharpwire.Views.AccentSwatchPicker"
+             x:Name="Root"
+             x:CompileBindings="False">
+    <ItemsControl ItemsSource="{Binding AccentPresets}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="vm:AccentPreset">
+                <Border Margin="0,0,8,8"
+                        Padding="2"
+                        CornerRadius="6"
+                        BorderThickness="2"
+                        Background="Transparent"
+                        Cursor="Hand"
+                        PointerPressed="Swatch_OnPointerPressed"
+                        ToolTip.Tip="{Binding Label}">
+                    <Border.BorderBrush>
+                        <MultiBinding Converter="{x:Static vm:AccentPresetMatchToBrushConverter.Instance}">
+                            <Binding Path="DataContext.SelectedAccentPreset" ElementName="Root" />
+                            <Binding />
+                        </MultiBinding>
+                    </Border.BorderBrush>
+                    <Border Width="28"
+                            Height="28"
+                            Classes="accent-swatch-tile"
+                            Background="{Binding SwatchBrush}" />
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

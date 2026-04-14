@@ -1,0 +1,309 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:nodify="clr-namespace:Nodify;assembly=Nodify"
+             xmlns:vm="using:Sharpwire.ViewModels"
+             x:Class="Sharpwire.Views.GraphTabView"
+             x:DataType="vm:GraphTabViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.status-icon">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.status-icon.think-icon">
+            <Setter Property="Opacity" Value="0.14" />
+        </Style>
+        <Style Selector="Border.status-icon.think-icon.think-pulse">
+            <Setter Property="Opacity" Value="1" />
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="Infinite" PlaybackDirection="AlternateReverse">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.22" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.status-icon.tool-icon">
+            <Setter Property="Opacity" Value="0.14" />
+        </Style>
+        <Style Selector="Border.status-icon.tool-icon.tool-pulse">
+            <Setter Property="Opacity" Value="1" />
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="Infinite" PlaybackDirection="AlternateReverse">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.2" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.status-icon.comm-icon">
+            <Setter Property="Opacity" Value="0.12" />
+        </Style>
+        <Style Selector="Border.status-icon.comm-icon.comm-pulse">
+            <Setter Property="Opacity" Value="1" />
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="Infinite" PlaybackDirection="AlternateReverse">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.18" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Idle / ready power icon: opacity breathe (class from IdleBreathing on Viewbox). -->
+        <Style Selector="Viewbox.pwr-breathe">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="Infinite" PlaybackDirection="AlternateReverse">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.55" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Agent node outline glow while Busy / thinking / tool / comm (opacity only — cheap vs animating BoxShadow). -->
+        <Style Selector="Border.agent-node-glow">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+        </Style>
+        <Style Selector="Border.agent-node-glow.working">
+            <Setter Property="BoxShadow" Value="0 0 14 3 #5898D8F0" />
+            <Style.Animations>
+                <Animation Duration="0:0:1" IterationCount="Infinite" PlaybackDirection="AlternateReverse">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.22" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.58" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Wires = handoff topology only; agent-to-agent chatter is chat UI, not extra edges. -->
+        <Style Selector="nodify|Connection.handoff-wire">
+            <Setter Property="Stroke" Value="#5AA0C8DD" />
+            <Setter Property="Fill" Value="#5AA0C8DD" />
+            <!-- Same stroke width at rest/hover to avoid visual jump. -->
+            <Setter Property="StrokeThickness" Value="2.85" />
+            <Setter Property="Opacity" Value="0.28" />
+            <Setter Property="StrokeLineCap" Value="Round" />
+            <!-- Push the line out slightly from the node. -->
+            <Setter Property="SourceOffset" Value="10,0" />
+            <Setter Property="TargetOffset" Value="10,0" />
+            <!-- Delay tooltip to reduce hover flicker on edges. -->
+            <Setter Property="ToolTip.ShowDelay" Value="1800" />
+        </Style>
+        <Style Selector="nodify|Connection.handoff-wire.flow-pulse">
+            <Setter Property="StrokeThickness" Value="3" />
+            <Style.Animations>
+                <!-- Brightness pulse: 0.4 -> 1.0 for active traffic. -->
+                <Animation Duration="0:0:0.5" IterationCount="Infinite" PlaybackDirection="AlternateReverse">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.4" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1.0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Hover: opacity only. -->
+        <Style Selector="nodify|Connection.handoff-wire:pointerover">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <!-- Hover + flow-pulse: opacity up. -->
+        <Style Selector="nodify|Connection.handoff-wire.flow-pulse:pointerover">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <!-- Nodify: push graph-space anchor from Connector into VM so Connection bindings stay correct (see Nodify.Calculator EditorView). -->
+        <Style Selector="nodify|NodeInput">
+            <Setter Property="Anchor" Value="{Binding Anchor, Mode=OneWayToSource, x:DataType=vm:AgentConnectorViewModel}" />
+            <Setter Property="IsConnected" Value="{Binding IsConnected, x:DataType=vm:AgentConnectorViewModel}" />
+            <Setter Property="Header" Value="{Binding Title, x:DataType=vm:AgentConnectorViewModel}" />
+            <Setter Property="ToolTip.Tip" Value="{Binding PortToolTip, x:DataType=vm:AgentConnectorViewModel}" />
+        </Style>
+        <Style Selector="nodify|NodeOutput">
+            <Setter Property="Anchor" Value="{Binding Anchor, Mode=OneWayToSource, x:DataType=vm:AgentConnectorViewModel}" />
+            <Setter Property="IsConnected" Value="{Binding IsConnected, x:DataType=vm:AgentConnectorViewModel}" />
+            <Setter Property="Header" Value="{Binding Title, x:DataType=vm:AgentConnectorViewModel}" />
+            <Setter Property="ToolTip.Tip" Value="{Binding PortToolTip, x:DataType=vm:AgentConnectorViewModel}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="#0a0a0a">
+        <Grid.Resources>
+            <VisualBrush x:Key="GridDrawingBrush"
+                         TileMode="Tile"
+                         DestinationRect="0 0 30 30"
+                         SourceRect="0 0 30 30"
+                         Transform="{Binding ViewportTransform, ElementName=Editor}">
+                <VisualBrush.Visual>
+                    <Rectangle Width="1"
+                               Height="1"
+                               Fill="#AAFFFFFF" />
+                </VisualBrush.Visual>
+            </VisualBrush>
+        </Grid.Resources>
+
+        <nodify:NodifyEditor x:Name="Editor"
+                             GridCellSize="5"
+                             Background="{StaticResource GridDrawingBrush}">
+            <nodify:NodifyEditor.Connections>
+                <Binding Path="$parent[Window].((vm:MainViewModel)DataContext).Connections" />
+            </nodify:NodifyEditor.Connections>
+            <nodify:NodifyEditor.ConnectionTemplate>
+                <DataTemplate DataType="{x:Type vm:HandoffConnectionViewModel}">
+                    <nodify:Connection Classes="handoff-wire"
+                                           Classes.flow-pulse="{Binding IsFlowPulse}"
+                                           Stroke="{Binding WireStrokeBrush}"
+                                           Fill="{Binding WireStrokeBrush}"
+                                           Source="{Binding DirectionalSource.Anchor}"
+                                           Target="{Binding DirectionalTarget.Anchor}"
+                                           Direction="{Binding DirectionalFlow}"
+                                           Spacing="50"
+                                           ArrowEnds="End"
+                                           ArrowSize="6,6"
+                                           ToolTip.Tip="{Binding ToolTipText}">
+                        <nodify:Connection.ContextFlyout>
+                            <Flyout>
+                                <StackPanel Spacing="10" MinWidth="200" Margin="5">
+                                    <TextBlock Text="EDGE PROPERTIES" FontWeight="Bold" FontSize="12" Foreground="#888" />
+                                    <TextBlock Text="Label" FontSize="11" />
+                                    <TextBox Text="{Binding EdgeLabel}" Watermark="Optional UI label" />
+                                    <TextBlock Text="Condition Ref" FontSize="11" Margin="0,5,0,0"/>
+                                    <TextBox Text="{Binding ConditionRef}" Watermark="(e.g. review_failed)" />
+                                </StackPanel>
+                            </Flyout>
+                        </nodify:Connection.ContextFlyout>
+                    </nodify:Connection>
+                </DataTemplate>
+            </nodify:NodifyEditor.ConnectionTemplate>
+            <nodify:NodifyEditor.ItemsSource>
+                <Binding Path="$parent[Window].((vm:MainViewModel)DataContext).Nodes" />
+            </nodify:NodifyEditor.ItemsSource>
+            <nodify:NodifyEditor.ItemContainerTheme>
+                <ControlTheme TargetType="nodify:ItemContainer" x:DataType="vm:BaseNodeViewModel">
+                    <Setter Property="Location" Value="{Binding Location, Mode=TwoWay}" />
+                    <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0" />
+                </ControlTheme>
+            </nodify:NodifyEditor.ItemContainerTheme>
+            <nodify:NodifyEditor.ItemTemplate>
+                <DataTemplate x:DataType="vm:AgentNodeViewModel">
+                    <Panel Width="240" MinHeight="120">
+                        <Border Classes="agent-node-glow"
+                                Classes.working="{Binding IsWorkingOutline}"
+                                Margin="-7"
+                                CornerRadius="11"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch" />
+                        <nodify:Node ZIndex="1"
+                                     Header="{Binding Title}"
+                                     HeaderBrush="{Binding HeaderBrush}"
+                                     Input="{Binding Input}"
+                                     Output="{Binding Output}"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Stretch"
+                                     Padding="0"
+                                     Margin="0"
+                                     BorderThickness="1"
+                                     HorizontalContentAlignment="Center"
+                                     VerticalContentAlignment="Center">
+                            <Panel MinHeight="52" />
+                        </nodify:Node>
+                        <Panel ZIndex="2"
+                               Height="52"
+                               VerticalAlignment="Bottom"
+                               Margin="10,0,10,10"
+                               HorizontalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Spacing="7">
+                                <Border Classes="status-icon pwr-icon"
+                                        Opacity="{Binding IdleLedOpacity}"
+                                        ToolTip.Tip="Idle / ready">
+                                    <Viewbox Stretch="Uniform"
+                                             Classes.pwr-breathe="{Binding IdleBreathing}">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Stroke="#34C759"
+                                                  StrokeThickness="2"
+                                                  StrokeLineCap="Round"
+                                                  Fill="Transparent"
+                                                  Data="M12,2v10M18.36,6.64a9,9,0,1,1-12.73,0" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                                <Border Classes="status-icon think-icon"
+                                        Classes.think-pulse="{Binding ThinkingPulse}"
+                                        ToolTip.Tip="Thinking (model)">
+                                    <Viewbox Stretch="Uniform">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Stroke="#5AC8FA"
+                                                  StrokeThickness="2"
+                                                  StrokeJoin="Round"
+                                                  StrokeLineCap="Round"
+                                                  Fill="Transparent"
+                                                  Data="M22,12h-4l-3,9L9,3l-3,9H2" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                                <Border Classes="status-icon tool-icon"
+                                        Classes.tool-pulse="{Binding ToolPulse}"
+                                        ToolTip.Tip="Tool / delegate">
+                                    <Viewbox Stretch="Uniform">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Fill="#FF9F0A"
+                                                  Data="M14.7,6.3a1,1,0,0,0,0,1.4l1.6,1.6a1,1,0,0,0,1.4,0l3.77-3.77a6,6,0,0,1-7.94,7.94l-6.91,6.91a2.12,2.12,0,0,1-3-3l6.91-6.91a6,6,0,0,1,7.94-7.94l-3.76,3.76z" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                                <Border Classes="status-icon comm-icon"
+                                        Classes.comm-pulse="{Binding CommPulse}"
+                                        ToolTip.Tip="Messaging (chat / handoff)">
+                                    <Viewbox Stretch="Uniform">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Fill="#64D2FF"
+                                                  Data="M21,15a2,2,0,0,1-2,2H7l-4,4V5a2,2,0,0,1,2-2h14a2,2,0,0,1,2,2z" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                                <Border Classes="status-icon err-icon"
+                                        Opacity="{Binding ErrorLedOpacity}"
+                                        ToolTip.Tip="Fault">
+                                    <Viewbox Stretch="Uniform">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Fill="#FF453A"
+                                                  Data="M21.73,18l-8-14a2,2,0,0,0-3.48,0l-8,14A2,2,0,0,0,4,21h16a2,2,0,0,0,1.73-3Z" />
+                                            <Path Stroke="#1a0a08"
+                                                  StrokeThickness="1.25"
+                                                  StrokeLineCap="Round"
+                                                  Fill="Transparent"
+                                                  Data="M12,9v4M12,17h.01" />
+                                        </Canvas>
+                                    </Viewbox>
+                                </Border>
+                            </StackPanel>
+                        </Panel>
+                    </Panel>
+                </DataTemplate>
+            </nodify:NodifyEditor.ItemTemplate>
+        </nodify:NodifyEditor>
+    </Grid>
+</UserControl>

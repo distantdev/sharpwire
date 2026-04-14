@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Sharpwire.ViewModels"
+             xmlns:views="using:Sharpwire.Views"
+             x:Class="Sharpwire.Views.OrchestratorEditorView"
+             x:DataType="vm:OrchestratorEditorViewModel">
+    <Panel Margin="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="15">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Panel Grid.Column="0" />
+                    <Button Grid.Column="1"
+                            Content="DUPLICATE AGENT"
+                            Command="{Binding DuplicateAgentCommand}"
+                            Padding="12,6"
+                            Background="#1a3a6e"
+                            Foreground="#e8f0ff"
+                            BorderBrush="#3d6eb8"
+                            BorderThickness="1" />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="Model output (this session):"
+                               FontSize="11"
+                               Foreground="#888"
+                               VerticalAlignment="Center" />
+                    <Button Content="Open session log…"
+                            Command="{Binding OpenSessionLogCommand}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="#7EB8D4"
+                            Padding="4,2"
+                            FontSize="11"
+                            HorizontalAlignment="Left" />
+                </StackPanel>
+
+                <Border BorderBrush="#333" BorderThickness="1" Padding="15" CornerRadius="4">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="APPEARANCE" FontWeight="Bold" FontSize="12" Foreground="#666"/>
+                        <TextBlock Text="Chat &amp; graph color" FontSize="11" Foreground="#888"/>
+                        <views:AccentSwatchPicker HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Instructions Section -->
+                <Border BorderBrush="#333" BorderThickness="1" Padding="15" CornerRadius="4">
+                    <StackPanel Spacing="10" Opacity="{Binding IsEditable, Converter={x:Static vm:OpacityConverter.Instance}, FallbackValue=0.6}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="SYSTEM PROMPT (BRAIN)" FontWeight="Bold" FontSize="12" Foreground="#666" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="REVERT TO DEFAULT" Command="{Binding RevertToDefaultCommand}" FontSize="10" IsVisible="{Binding IsEditable}"/>
+                        </Grid>
+                        <TextBox Text="{Binding Instructions}" 
+                                 IsReadOnly="True" 
+                                 AcceptsReturn="True" 
+                                 Height="350" 
+                                 TextWrapping="Wrap" 
+                                 FontFamily="Cascadia Code, Consolas, Monospace"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Tools Section -->
+                <Border BorderBrush="#333" BorderThickness="1" Padding="15" CornerRadius="4">
+                    <StackPanel Spacing="10" Opacity="{Binding IsEditable, Converter={x:Static vm:OpacityConverter.Instance}, FallbackValue=0.6}">
+                        <TextBlock Text="ENABLED ORCHESTRATION TOOLS" FontWeight="Bold" FontSize="12" Foreground="#666"/>
+                        <ScrollViewer MinHeight="100" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Tools}" IsEnabled="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ToolOptionViewModel">
+                                        <CheckBox IsChecked="{Binding IsEnabled}" Content="{Binding Id}" Margin="0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Panel>
+</UserControl>

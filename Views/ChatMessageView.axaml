@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+             xmlns:ctxt="clr-namespace:ColorTextBlock.Avalonia;assembly=ColorTextBlock.Avalonia"
+             xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:vm="using:Sharpwire.ViewModels"
+             xmlns:views="using:Sharpwire.Views"
+             xmlns:conv="using:Sharpwire.Converters"
+             x:Class="Sharpwire.Views.ChatMessageView"
+             x:DataType="vm:ChatMessageViewModel"
+             Foreground="{Binding BodyForegroundBrush}">
+    <UserControl.Resources>
+        <conv:ChatMarkdownFenceLangStripConverter x:Key="FenceLangStrip" />
+    </UserControl.Resources>
+    <!--
+      FluentAvalonia markdown assumes light panels; bubble body uses $parent[views:ChatMessageView] for bindings.
+      Fence languages are stripped for display only (Markdown.Avalonia.SyntaxHigh CodePad clips the editor when LangInfo is shown).
+    -->
+    <Border x:Name="ChatBubble"
+            Background="{Binding BackgroundBrush}"
+            CornerRadius="8"
+            Padding="10"
+            Margin="0,5">
+        <StackPanel>
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="{Binding HeaderText}"
+                           FontWeight="Normal"
+                           FontSize="11"
+                           Foreground="{Binding HeaderForegroundBrush}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding FormattedTime}"
+                           FontSize="10"
+                           FontWeight="Normal"
+                           Foreground="#D8D8D8" />
+            </Grid>
+            <md:MarkdownScrollViewer x:Name="MarkdownBody"
+                                     Markdown="{Binding Text, Converter={StaticResource FenceLangStrip}}"
+                                     MarkdownStyle="{x:Static md:MarkdownStyle.FluentAvalonia}"
+                                     Margin="0,6,0,0"
+                                     HorizontalAlignment="Stretch"
+                                     MinHeight="32"
+                                     SelectionEnabled="True">
+                <md:MarkdownScrollViewer.Styles>
+                    <!-- Fluent theme can give CodeBlock borders a light/teal fill; light gray text then vanishes. Force a dark pad. -->
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer Border.CodeBlock">
+                        <Setter Property="Background" Value="#0D1117" />
+                        <Setter Property="BorderBrush" Value="#30363D" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer Border.CodeBlock ctxt|CTextBlock">
+                        <Setter Property="Foreground" Value="#F0F6FC" />
+                        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, monospace" />
+                        <Setter Property="FontWeight" Value="Normal" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer Border.CodeBlock TextBlock">
+                        <Setter Property="Foreground" Value="#F0F6FC" />
+                        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, monospace" />
+                        <Setter Property="FontWeight" Value="Normal" />
+                    </Style>
+                    <!-- Base colors; SyntaxHighlighting is cleared in code-behind; see transformer for glyph fg/bg. -->
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ae|TextEditor">
+                        <Setter Property="Background" Value="#0D1117" />
+                        <Setter Property="Foreground" Value="#F0F6FC" />
+                        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, monospace" />
+                        <Setter Property="FontWeight" Value="Normal" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock">
+                        <Setter Property="FontFamily" Value="Segoe UI, system-ui, sans-serif" />
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Paragraph">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.ListMarker">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Note">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Heading1, .Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Heading2, .Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Heading3, .Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Heading4, .Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Heading5, .Markdown_Avalonia_MarkdownViewer ctxt|CTextBlock.Heading6">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer Grid.Table ctxt|CTextBlock">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer Border.Blockquote ctxt|CTextBlock">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer ctxt|CCode">
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                        <Setter Property="Background" Value="#35FFFFFF" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer TextBlock:not(.CodeBlock)">
+                        <Setter Property="FontFamily" Value="Segoe UI, system-ui, sans-serif" />
+                        <Setter Property="Foreground" Value="{Binding $parent[views:ChatMessageView].((vm:ChatMessageViewModel)DataContext).BodyForegroundBrush}" />
+                    </Style>
+                    <Style Selector=".Markdown_Avalonia_MarkdownViewer TextBlock.CodeBlock">
+                        <Setter Property="Foreground" Value="#F0F6FC" />
+                        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, monospace" />
+                        <Setter Property="FontWeight" Value="Normal" />
+                    </Style>
+                </md:MarkdownScrollViewer.Styles>
+            </md:MarkdownScrollViewer>
+        </StackPanel>
+    </Border>
+</UserControl>

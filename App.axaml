@@ -1,0 +1,38 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:conv="using:Sharpwire.Converters"
+             x:Class="Sharpwire.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Nodify/Theme.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
+            <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
+            <CornerRadius x:Key="OverlayCornerRadius">0</CornerRadius>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
+        <!-- Syntax-highlighted fenced code uses AvaloniaEdit; without this appendix, editor colors stay dark-theme while DefaultTheme uses a light code pad — text looks blank. -->
+        <StyleInclude Source="avares://Markdown.Avalonia.SyntaxHigh/StyleCollections/AppendixOfFluentAvalonia.axaml" />
+
+        <Style Selector="Window">
+            <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Monospace" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="Border">
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <!-- Rounded color tiles (global Border corner radius is 0). -->
+        <Style Selector="Border.accent-swatch-tile">
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+    </Application.Styles>
+</Application>

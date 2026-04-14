@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Sharpwire.ViewModels"
+             x:Class="Sharpwire.Views.PluginSettingsView"
+             x:DataType="vm:PluginSettingsViewModel">
+    <ScrollViewer>
+        <StackPanel Spacing="25" Margin="30">
+            <StackPanel Spacing="5">
+                <TextBlock Text="{Binding PluginName, StringFormat='\{0\} SETTINGS'}" FontSize="24" FontWeight="ExtraBold" Foreground="White"/>
+                <TextBlock Text="Configure settings for this plugin. Values are stored in workspace .sharpwire/settings.json." FontSize="12" Foreground="#888" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                <ItemsControl ItemsSource="{Binding Properties}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PluginPropertyViewModel">
+                            <StackPanel Spacing="10" Margin="0,0,0,20">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="{Binding Label}" FontWeight="Bold" FontSize="13"/>
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="11"
+                                               Foreground="#888"
+                                               TextWrapping="Wrap"
+                                               IsVisible="{Binding HasDescription}"/>
+                                </StackPanel>
+
+                                <Panel>
+                                    <TextBox Text="{Binding Value}"
+                                             PasswordChar="*"
+                                             IsVisible="{Binding IsSecretPlainTextEditorVisible}"
+                                             HorizontalAlignment="Stretch"/>
+                                    <TextBox Text="{Binding Value}"
+                                             IsVisible="{Binding IsNonSecretPlainTextEditorVisible}"
+                                             HorizontalAlignment="Stretch"/>
+                                    <ToggleSwitch IsChecked="{Binding BoolValue, Mode=TwoWay}"
+                                                  IsVisible="{Binding IsBoolEditorVisible}"
+                                                  OnContent=""
+                                                  OffContent=""/>
+                                </Panel>
+                                <Separator Background="#222" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

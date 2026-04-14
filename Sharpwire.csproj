@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Matches Sharpwire.Core.Secrets.LlmApiKeyStore.UserSecretsId (dotnet user-secrets CLI). -->
+    <UserSecretsId>30c5c37e-4b8d-4a7a-9f1e-2c3d4e5f6a7b</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.13">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Google.GenAI" Version="1.6.1" />
+    <PackageReference Include="FluentAvaloniaUI" Version="2.5.1" />
+    <PackageReference Include="Markdown.Avalonia" Version="11.0.3-a1" />
+    <PackageReference Include="Microsoft.Agents.AI.Anthropic" Version="1.1.0-rc1" />
+    <PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.4.1" />
+    <PackageReference Include="NodifyAvalonia" Version="6.6.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.3.0" />
+    <PackageReference Include="Microsoft.Agents.AI" Version="*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Velopack" Version="0.0.1298" />
+    <PackageReference Include="WebView2.Avalonia" Version="1.0.3240.44-preview.250526.1" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <!-- Direct reference to override vulnerable transitive dependency (GHSA-xrw6-gwf8-vvr9) -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\icon.ico" />
+    <AvaloniaResource Include="Assets\icon.png" />
+  </ItemGroup>
+
+  <!-- Folder-plugin sample: compiled only by PluginCompilerService from workspace/plugins, not the app assembly. -->
+  <ItemGroup>
+    <Compile Remove="Assets\PluginSamples\ExampleToolsPlugin.cs" />
+    <Compile Remove="Assets\PluginSamples\HookLogger.cs" />
+    <Content Include="Assets\PluginSamples\ExampleToolsPlugin.cs" CopyToOutputDirectory="PreserveNewest" TargetPath="PluginSamples\ExampleToolsPlugin.cs" />
+    <Content Include="Assets\PluginSamples\HookLogger.cs" CopyToOutputDirectory="PreserveNewest" TargetPath="PluginSamples\HookLogger.cs" />
+    <Content Include="Assets\PluginSamples\README.txt" CopyToOutputDirectory="PreserveNewest" TargetPath="PluginSamples\README.txt" />
+  </ItemGroup>
+</Project>

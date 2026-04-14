@@ -1,0 +1,217 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Sharpwire.ViewModels"
+             xmlns:conv="using:Sharpwire.Converters"
+             x:Class="Sharpwire.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <UserControl.Resources>
+        <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
+    </UserControl.Resources>
+    
+    <ScrollViewer>
+        <StackPanel Spacing="25" Margin="30">
+            <StackPanel Spacing="5">
+                <TextBlock Text="SYSTEM SETTINGS" FontSize="24" FontWeight="ExtraBold" Foreground="White"/>
+                <TextBlock Text="Configure global providers, credentials, and orchestration defaults." FontSize="12" Foreground="#888"/>
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                <!-- Credentials Section -->
+                <StackPanel Grid.Column="0" Grid.Row="0" Spacing="15" Margin="0,0,15,0">
+                    <TextBlock Text="API CREDENTIALS" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="15">
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Google AI API Key (Gemini)" FontSize="11" Foreground="#888"/>
+                                <TextBox Text="{Binding GoogleApiKey}" Watermark="Enter Google AI API Key..." PasswordChar="*" UseFloatingWatermark="True"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="OpenAI API Key (GPT / Custom)" FontSize="11" Foreground="#888"/>
+                                <TextBox Text="{Binding OpenAiApiKey}" Watermark="Enter OpenAI API Key..." PasswordChar="*" UseFloatingWatermark="True"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Anthropic API Key (Claude)" FontSize="11" Foreground="#888"/>
+                                <TextBox Text="{Binding AnthropicApiKey}" Watermark="Enter Anthropic API Key..." PasswordChar="*" UseFloatingWatermark="True"/>
+                            </StackPanel>
+
+                            <StackPanel Spacing="5">
+                                <TextBlock Text="Custom Endpoint" FontSize="11" Foreground="#888"/>
+                                <TextBox Text="{Binding CustomEndpoint}" Watermark="e.g. http://localhost:11434/v1" UseFloatingWatermark="True"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Global Default Section -->
+                <StackPanel Grid.Column="1" Grid.Row="0" Spacing="15" Margin="15,0,0,0">
+                    <TextBlock Text="GLOBAL DEFAULT LLM" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="20">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Default Provider" FontSize="11" Foreground="#888"/>
+                                <ComboBox SelectedItem="{Binding LlmProvider}" HorizontalAlignment="Stretch">
+                                    <x:String>Gemini</x:String>
+                                    <x:String>OpenAI</x:String>
+                                    <x:String>Anthropic</x:String>
+                                    <x:String>Custom</x:String>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Default Model" FontSize="11" Foreground="#888"/>
+                                <Panel>
+                                    <ComboBox SelectedItem="{Binding ModelId}" ItemsSource="{Binding GeminiModels}" 
+                                              IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='Gemini'}"
+                                              HorizontalAlignment="Stretch" IsEditable="True"/>
+                                    
+                                    <ComboBox SelectedItem="{Binding ModelId}" ItemsSource="{Binding OpenAiModels}" 
+                                              IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='OpenAI'}"
+                                              HorizontalAlignment="Stretch" IsEditable="True"/>
+
+                                    <ComboBox SelectedItem="{Binding ModelId}" ItemsSource="{Binding ClaudeModels}" 
+                                              IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='Anthropic'}"
+                                              HorizontalAlignment="Stretch" IsEditable="True"/>
+
+                                    <TextBox Text="{Binding ModelId}" Watermark="e.g. llama3"
+                                             IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='Custom'}"
+                                             HorizontalAlignment="Stretch"/>
+                                </Panel>
+                            </StackPanel>
+                            
+                            <TextBlock Text="Global defaults are used when an agent does not specify its own provider or model." 
+                                       FontSize="10" FontStyle="Italic" Foreground="#666" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Orchestration Section -->
+                <StackPanel Grid.Column="0" Grid.Row="1" Spacing="15" Margin="0,25,15,0">
+                    <TextBlock Text="ORCHESTRATION" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="15">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Autonomous Agent Creation" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Allow orchestrator to create new agents when relevant" FontSize="10" Foreground="#888" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding AllowOrchestratorAgentCreation}" OnContent="" OffContent=""/>
+                            </Grid>
+                            
+                            <Separator Background="#333" />
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Enable Coder (new workspaces)" FontWeight="SemiBold"/>
+                                    <TextBlock Text="When creating a fresh workspace, add the Coder starter agent" FontSize="10" Foreground="#888" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableCoder}" OnContent="" OffContent=""/>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="Enable Reviewer (new workspaces)" FontWeight="SemiBold"/>
+                                    <TextBlock Text="When creating a fresh workspace, add the Reviewer starter agent" FontSize="10" Foreground="#888" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableReviewer}" OnContent="" OffContent=""/>
+                            </Grid>
+
+                            <Separator Background="#333" />
+                            
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="Max Loop Iterations" FontWeight="SemiBold"/>
+                                <TextBlock Text="Maximum review return traversals before manual intervention (0 = unlimited)" FontSize="10" Foreground="#888" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Spacing="15" Margin="0,5,0,0">
+                                    <Slider Width="250" Minimum="0" Maximum="20" SmallChange="1" LargeChange="1"
+                                            Value="{Binding MaxLoopIterations}" />
+                                    <Border Background="#333" Padding="8,4" CornerRadius="4">
+                                        <TextBlock Text="{Binding MaxLoopIterations}" FontWeight="Bold" MinWidth="20" TextAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="3" Spacing="15" Margin="0,25,0,0">
+                    <TextBlock Text="UPDATES" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto" ColumnSpacing="10" RowSpacing="8">
+                                <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Auto check and install updates"/>
+                                <ToggleSwitch Grid.Column="1" Grid.Row="0" IsChecked="{Binding EnableAutoUpdateChecks}" HorizontalAlignment="Left"/>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" Padding="14,8"/>
+                                <Button Content="Install updates" Command="{Binding InstallUpdateCommand}" Padding="14,8"
+                                        IsEnabled="{Binding IsUpdateAvailable}"/>
+                                <ProgressBar Width="120" Height="6" IsIndeterminate="True" IsVisible="{Binding IsUpdateBusy}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding UpdateStatus}" FontSize="11" Foreground="#AAA" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="4" Spacing="15" Margin="0,25,0,0">
+                    <TextBlock Text="AGENTS &amp; PLUGINS VALIDATION" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Runs Sharpwire's internal validation agent on a live snapshot: every loaded agent, persisted workflow edges, registered tools, and plugin settings metadata."
+                                       FontSize="11" Foreground="#888" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button Content="Validate all agents &amp; plugins" Command="{Binding RunDesignReviewCommand}" Padding="14,8"/>
+                                <ProgressBar Width="120" Height="6" IsIndeterminate="True" IsVisible="{Binding IsBusy}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Result" FontWeight="SemiBold" FontSize="11" Foreground="#AAA"/>
+                            <TextBox Text="{Binding DesignReviewResult}" IsReadOnly="True" AcceptsReturn="True"
+                                     MinHeight="160" TextWrapping="Wrap" Watermark="Results appear here."/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Spacing="15" Margin="0,25,0,0"
+                            IsVisible="{Binding ShowPluginSettingsSection}">
+                    <TextBlock Text="LOADED PLUGINS (SETTINGS)" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Plugins that declare a [PluginSettings] class with [PluginSetting] properties appear here. Edit opens a dedicated tab; values are stored under pluginSettings in settings.json."
+                                       FontSize="11" Foreground="#888" TextWrapping="Wrap"/>
+                            <ItemsControl ItemsSource="{Binding PluginSettingRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PluginSettingsListRowViewModel">
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                            <StackPanel Grid.Column="0" Spacing="2">
+                                                <TextBlock Text="{Binding PluginName}" FontWeight="SemiBold" FontSize="13"/>
+                                                <TextBlock Text="{Binding SettingSummary}" FontSize="10" Foreground="#666"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="Edit" VerticalAlignment="Center"
+                                                    Command="{Binding EditCommand}" Padding="14,6"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="No plugins expose settings yet. Add a settings class to your workspace plugin and reload plugins."
+                                       FontSize="11" FontStyle="Italic" Foreground="#555" TextWrapping="Wrap"
+                                       IsVisible="{Binding ShowNoPluginSettingsHint}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Info Section -->
+                <StackPanel Grid.Column="1" Grid.Row="1" Spacing="15" Margin="15,25,0,0">
+                    <TextBlock Text="WORKSPACE INFO" FontWeight="Bold" FontSize="12" Foreground="SpringGreen"/>
+                    <Border BorderBrush="#333" BorderThickness="1" Padding="20" Background="#1a1a1a">
+                        <StackPanel Spacing="10">
+                             <TextBlock Text="Persistence Note" FontWeight="SemiBold"/>
+                             <TextBlock Text="Agents and scenes are persisted to the .sharpwire folder in your current workspace. Deleting an agent from the graph is permanent for the current scene." 
+                                        FontSize="11" Foreground="#AAA" TextWrapping="Wrap"/>
+                             
+                             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,117 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Sharpwire.ViewModels"
+        x:Class="Sharpwire.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Settings - Sharpwire"
+        Icon="/Assets/icon.ico"
+        Width="500" Height="500"
+        WindowStartupLocation="CenterOwner"
+        RequestedThemeVariant="Dark">
+    <Panel Margin="20">
+        <StackPanel Spacing="15">
+            <TextBlock Text="SYSTEM SETTINGS" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <!-- Credentials Section -->
+            <Border BorderBrush="#333" BorderThickness="1" Padding="15" CornerRadius="4">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="API CREDENTIALS (USER SECRETS)" FontWeight="Bold" FontSize="12" Foreground="#666"/>
+                    
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Google AI API Key (Gemini)" FontSize="11" Foreground="#888"/>
+                        <TextBox Text="{Binding GoogleApiKey}" Watermark="Enter Google AI API Key..." PasswordChar="*"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="OpenAI API Key (GPT / Custom)" FontSize="11" Foreground="#888"/>
+                        <TextBox Text="{Binding OpenAiApiKey}" Watermark="Enter OpenAI API Key..." PasswordChar="*"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Anthropic API Key (Claude)" FontSize="11" Foreground="#888"/>
+                        <TextBox Text="{Binding AnthropicApiKey}" Watermark="Enter Anthropic API Key..." PasswordChar="*"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="Custom Endpoint (OpenAI compatible)" FontSize="11" Foreground="#888"/>
+                        <TextBox Text="{Binding CustomEndpoint}" Watermark="e.g. http://localhost:11434/v1"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Global Default Section -->
+            <Border BorderBrush="#333" BorderThickness="1" Padding="15" CornerRadius="4">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="GLOBAL DEFAULT LLM" FontWeight="Bold" FontSize="12" Foreground="#666"/>
+                    
+                    <Grid ColumnDefinitions="*,*">
+                        <StackPanel Grid.Column="0" Spacing="5" Margin="0,0,10,0">
+                            <TextBlock Text="Default Provider" FontSize="11" Foreground="#888"/>
+                            <ComboBox SelectedItem="{Binding LlmProvider}" HorizontalAlignment="Stretch">
+                                <x:String>Gemini</x:String>
+                                <x:String>OpenAI</x:String>
+                                <x:String>Anthropic</x:String>
+                                <x:String>Custom</x:String>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Spacing="5">
+                            <TextBlock Text="Default Model" FontSize="11" Foreground="#888"/>
+                            <Panel>
+                                <ComboBox SelectedItem="{Binding ModelId}" ItemsSource="{Binding GeminiModels}" 
+                                          IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='Gemini'}"
+                                          HorizontalAlignment="Stretch" IsEditable="True"/>
+                                
+                                <ComboBox SelectedItem="{Binding ModelId}" ItemsSource="{Binding OpenAiModels}" 
+                                          IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='OpenAI'}"
+                                          HorizontalAlignment="Stretch" IsEditable="True"/>
+
+                                <ComboBox SelectedItem="{Binding ModelId}" ItemsSource="{Binding ClaudeModels}" 
+                                          IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='Anthropic'}"
+                                          HorizontalAlignment="Stretch" IsEditable="True"/>
+
+                                <TextBox Text="{Binding ModelId}" Watermark="e.g. llama3"
+                                         IsVisible="{Binding LlmProvider, Converter={StaticResource StringEqualsConverter}, ConverterParameter='Custom'}"
+                                         HorizontalAlignment="Stretch"/>
+                            </Panel>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Core Agents Section -->
+            <Border BorderBrush="#333" BorderThickness="1" Padding="15" CornerRadius="4">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="CORE AGENTS" FontWeight="Bold" FontSize="12" Foreground="#666"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Enable Coder Agent" VerticalAlignment="Center"/>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableCoder}" OnContent="" OffContent=""/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Enable Reviewer Agent" VerticalAlignment="Center"/>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableReviewer}" OnContent="" OffContent=""/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+                        <TextBlock Grid.Column="0" Text="Allow orchestrator to create new agents when relevant" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding AllowOrchestratorAgentCreation}" OnContent="" OffContent=""/>
+                    </Grid>
+                    <StackPanel Spacing="6" Margin="0,8,0,0">
+                        <TextBlock Text="Max review return iterations before HITL (0 = unlimited)" TextWrapping="Wrap" Foreground="#888" FontSize="11"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Slider Width="200" Minimum="0" Maximum="20" SmallChange="1" LargeChange="1"
+                                    Value="{Binding MaxLoopIterations}" />
+                            <TextBlock Text="{Binding MaxLoopIterations}" VerticalAlignment="Center" MinWidth="24"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"/>
+            
+            <Button Content="CLOSE" 
+                    Click="Close_Click"
+                    HorizontalAlignment="Right" 
+                    Margin="0,20,0,0"/>
+        </StackPanel>
+    </Panel>
+</Window>

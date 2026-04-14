@@ -1,0 +1,12 @@
+# .NET Build Artifacts
+bin/
+obj/
+artifacts/
+
+# User-specific Workspace Data
+workspace/
+.sharpwire/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
