@@ -76,7 +76,12 @@ public class Agent
             tools.Add(approveTool);
         }
 
-        var options = new ChatOptions { Tools = tools };
+        var options = new ChatOptions
+        {
+            Tools = tools,
+            // Explicit cap so providers don't assume a tiny default max output (esp. large orchestrator system prompts).
+            MaxOutputTokens = 16_384
+        };
 
         // Debug: Log tool availability
         if (Tools.Count > 0)
@@ -133,6 +138,28 @@ public class Agent
                         onStreamText(forUi);
                 }
 
+                // Streaming merge (MEAI ToChatResponse) occasionally yields an empty assistant shell while updates were
+                // collected — logs: collectedUpdates>0, streamedTextDelta false, assistant Contents empty (H6).
+                var stitched = LastNonEmptyAssistantTextFromResponse(final);
+                if (collected.Count > 0 &&
+                    string.IsNullOrWhiteSpace(ChatTextNormalizer.ForDisplay(stitched)))
+                {
+                    var reliable = await _client.GetResponseAsync(messages, options, ct).ConfigureAwait(false);
+                    var relText = LastNonEmptyAssistantTextFromResponse(reliable);
+                    if (!string.IsNullOrWhiteSpace(ChatTextNormalizer.ForDisplay(relText)))
+                    {
+                        final = reliable;
+                        if (!streamedAny && onStreamText != null)
+                        {
+                            var forUi2 = !string.IsNullOrEmpty(final.Text)
+                                ? final.Text
+                                : relText;
+                            if (!string.IsNullOrEmpty(forUi2))
+                                onStreamText(forUi2);
+                        }
+                    }
+                }
+
                 return final;
             }
             catch (NotImplementedException)
@@ -162,6 +189,10 @@ public class Agent
             if (!string.IsNullOrWhiteSpace(t))
                 return t;
         }
+
+        var agg = ChatTextNormalizer.ForDisplay(response.Text ?? string.Empty);
+        if (!string.IsNullOrWhiteSpace(agg))
+            return agg;
 
         return string.Empty;
     }
@@ -475,6 +506,10 @@ public partial class AgentService
             if (!string.IsNullOrWhiteSpace(t))
                 return t;
         }
+
+        var agg = ChatTextNormalizer.ForDisplay(response.Text ?? string.Empty);
+        if (!string.IsNullOrWhiteSpace(agg))
+            return agg;
 
         return string.Empty;
     }
@@ -1171,6 +1206,7 @@ public partial class AgentService
                                "- The user already sees each agent's message in chat under that name. Do not repeat their detailed report in your own voice as if you did the same work.\n" +
                                "- When you attribute work, use the agent's bare name only (e.g. Coder, Poet, Reviewer)—not \"the Coder agent\", \"the Poet agent\", or similar.\n" +
                                "- After delegation, reply briefly as coordinator only: who did what, whether the user's goal seems satisfied, and any next steps. Use names like \"Coder added …\" or \"Poet wrote …\" if you mention specifics.\n" +
+                               "- Never answer in first person as if you personally wrote code, plugins, or files—that voice belongs to delegated agents only.\n" +
                                "- If another agent's answer already fully answers the user, a short closing line is enough—do not re-narrate their implementation as yours.\n\n" +
                                "Design validation:\n" +
                                "- `CreateNewAgent` and `CreateAgentChain` run an internal design review before applying changes; incorporate the feedback returned in the tool result.\n" +
@@ -1919,27 +1955,23 @@ public partial class AgentService
 
             _session.Transcript.AppendUser(task);
 
-            BeginModelStreamBatch(OrchestratorAgentName);
-            OnAgentModelStreamStarted?.Invoke(OrchestratorAgentName, AccentForSender(OrchestratorAgentName));
-            ChatResponse response;
-            try
-            {
-                response = await orchestrator.GetResponseAsync(
+            // Orchestrator uses non-streaming GetResponseAsync only. Evidence (H6): Gemini + MEAI streaming merge
+            // (collected.ToChatResponse) can yield an empty assistant shell while non-streaming returns a normal reply;
+            // a follow-up GetResponseAsync after streaming also stayed empty in logs, so avoid streaming merge entirely here.
+            ChatResponse response = await orchestrator.GetResponseAsync(
                     task,
                     _session.Transcript.CopyForModelPrompt(),
                     ct,
-                    d => AppendModelStreamBatch(OrchestratorAgentName, d)).ConfigureAwait(false);
-            }
-            finally
-            {
-                FlushModelStreamBatch(OrchestratorAgentName);
-                OnAgentModelStreamEnded?.Invoke(OrchestratorAgentName);
-            }
-            
-            _session.Transcript.AppendMessages(response.Messages);
+                    onStreamText: null)
+                .ConfigureAwait(false);
 
-            var orchestratorReply = LastNonEmptyAssistantText(response);
-            var responseUsedTools = ResponseUsedTools(response);
+            var adjustedMsgs = GeminiRawResponseInterop.PatchEmptyAssistantsFromGeminiAggregate(response, out _);
+
+            _session.Transcript.AppendMessages(adjustedMsgs);
+
+            var adjustedResponse = new ChatResponse(adjustedMsgs);
+            var orchestratorReply = LastNonEmptyAssistantText(adjustedResponse);
+            var responseUsedTools = ResponseUsedTools(adjustedResponse);
             if (TryDetectAgentOnlyToolNotFound(orchestratorReply, out var missingTool))
             {
                 var recoveryNudge =
@@ -1957,7 +1989,9 @@ public partial class AgentService
                         _session.Transcript.CopyForModelPrompt(),
                         ct)
                     .ConfigureAwait(false);
-                _session.Transcript.AppendMessages(response.Messages);
+                var adjustedRecovery = GeminiRawResponseInterop.PatchEmptyAssistantsFromGeminiAggregate(response, out _);
+                _session.Transcript.AppendMessages(adjustedRecovery);
+                response = new ChatResponse(adjustedRecovery);
                 orchestratorReply = LastNonEmptyAssistantText(response);
                 responseUsedTools = responseUsedTools || ResponseUsedTools(response);
             }
@@ -1972,6 +2006,13 @@ public partial class AgentService
             orchestratorReply = turnEndHook.ResponseText ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(orchestratorReply))
                 EmitChatMessage(MessageRole.Agent, orchestratorReply, OrchestratorAgentName, AccentForSender(OrchestratorAgentName));
+            else
+            {
+                var idleNote = turnEndHook.ResponseUsedTools
+                    ? "I'm not sure how to do that. If something ran above (tools or agents), check those messages."
+                    : "I'm not sure how to do that.";
+                EmitChatMessage(MessageRole.System, idleNote, "System", null);
+            }
 
             if (turnEndHook.ResponseUsedTools)
             {

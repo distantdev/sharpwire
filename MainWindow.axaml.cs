@@ -1589,6 +1589,7 @@ public partial class MainWindow : Window
         {
             ApplyThinkingAgentDisplay(AgentService.OrchestratorAgentName);
             _chatViewModel.IsThinking = true;
+
             try
             {
                 def = await _agentService.SuggestAgentDefinitionFromRoleAsync(role, ct).ConfigureAwait(true);
