@@ -40,6 +40,9 @@ public partial class ChatViewModel : ObservableObject
     private string _inflightRaw = string.Empty;
     private ChatMessageViewModel? _inflightChatRow;
 
+    /// <summary>Last markdown pushed to LiveMarkdown for the inflight row (fence-stripped); used for append-only deltas.</summary>
+    private string _lastInflightMarkdownDisplay = string.Empty;
+
     public void AddMessage(MessageRole role, string text, string senderName = "", string? accentColorHex = null)
     {
         var body = ChatTextNormalizer.ForDisplay(LogRedaction.MaskForUi(text));
@@ -64,8 +67,13 @@ public partial class ChatViewModel : ObservableObject
                 _inflightStreamSender != null &&
                 string.Equals(senderName, _inflightStreamSender, StringComparison.OrdinalIgnoreCase))
             {
+                var md = ChatMarkdownFenceStrip.StripFenceLanguageLine(body);
                 if (_inflightChatRow != null)
+                {
                     _inflightChatRow.Text = body;
+                    _inflightChatRow.UsesIncrementalMarkdown = false;
+                    _inflightChatRow.RaiseMarkdownReplace(md);
+                }
                 else
                 {
                     Messages.Add(new ChatMessageViewModel
@@ -99,6 +107,7 @@ public partial class ChatViewModel : ObservableObject
             _inflightStreamAccent = accentColorHex;
             _inflightRaw = string.Empty;
             _inflightChatRow = null;
+            _lastInflightMarkdownDisplay = string.Empty;
         });
     }
 
@@ -123,16 +132,28 @@ public partial class ChatViewModel : ObservableObject
                 _inflightChatRow = new ChatMessageViewModel
                 {
                     Role = MessageRole.Agent,
-                    Text = display,
                     SenderName = agentName,
-                    AccentColorHex = _inflightStreamAccent
+                    AccentColorHex = _inflightStreamAccent,
+                    UsesIncrementalMarkdown = true
                 };
                 Messages.Add(_inflightChatRow);
+                _lastInflightMarkdownDisplay = string.Empty;
             }
-            else
-                _inflightChatRow.Text = display;
 
-            StreamingChatUpdated?.Invoke();
+            // Defer push so ItemsControl realizes ChatMessageView and subscribes before append/replace events fire.
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_inflightStreamSender == null ||
+                    !string.Equals(agentName, _inflightStreamSender, StringComparison.OrdinalIgnoreCase))
+                    return;
+
+                var displayNow = ChatTextNormalizer.ForDisplay(LogRedaction.MaskForUi(_inflightRaw));
+                if (string.IsNullOrWhiteSpace(displayNow))
+                    return;
+
+                PushInflightMarkdownDeltas(displayNow);
+                StreamingChatUpdated?.Invoke();
+            }, DispatcherPriority.Loaded);
         });
     }
 
@@ -152,9 +173,32 @@ public partial class ChatViewModel : ObservableObject
                 return;
             }
 
-            if (_inflightChatRow == null && string.IsNullOrEmpty(_inflightRaw))
-                ClearInflightStreamState();
+            if (_inflightChatRow != null)
+                _inflightChatRow.UsesIncrementalMarkdown = false;
+
+            ClearInflightStreamState();
         });
+    }
+
+    private void PushInflightMarkdownDeltas(string displayBody)
+    {
+        if (_inflightChatRow == null)
+            return;
+
+        var md = ChatMarkdownFenceStrip.StripFenceLanguageLine(displayBody);
+        _inflightChatRow.Text = displayBody;
+
+        if (md.Length < _lastInflightMarkdownDisplay.Length ||
+            !md.StartsWith(_lastInflightMarkdownDisplay, StringComparison.Ordinal))
+            _inflightChatRow.RaiseMarkdownReplace(md);
+        else
+        {
+            var suffix = md[_lastInflightMarkdownDisplay.Length..];
+            if (suffix.Length > 0)
+                _inflightChatRow.RaiseMarkdownAppend(suffix);
+        }
+
+        _lastInflightMarkdownDisplay = md;
     }
 
     private void ClearInflightStreamState()
@@ -163,6 +207,7 @@ public partial class ChatViewModel : ObservableObject
         _inflightStreamAccent = null;
         _inflightRaw = string.Empty;
         _inflightChatRow = null;
+        _lastInflightMarkdownDisplay = string.Empty;
     }
 
     public void ClearChat()

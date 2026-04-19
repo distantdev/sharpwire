@@ -1,157 +1,103 @@
 using System;
 using System.ComponentModel;
-using System.Linq;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Media;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using AvaloniaEdit;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Highlighting;
-using AvaloniaEdit.Rendering;
+using Avalonia.Interactivity;
+using LiveMarkdown.Avalonia;
+using Sharpwire.Core;
 using Sharpwire.ViewModels;
 
 namespace Sharpwire.Views;
 
 public partial class ChatMessageView : UserControl
 {
-    private static readonly SolidColorBrush ChatCodeForeground = new(Color.Parse("#F0F6FC"));
-    private static readonly SolidColorBrush ChatCodeBackground = new(Color.Parse("#0D1117"));
-
+    private readonly ObservableStringBuilder _markdownBuilder = new();
     private ChatMessageViewModel? _vm;
-    private bool _fixingEditors;
-    private long _lastLayoutFixTicks;
-    private DispatcherTimer? _deferredEditorFix;
 
     public ChatMessageView()
     {
         InitializeComponent();
         DataContextChanged += (_, _) => HookViewModel();
         Loaded += OnLoaded;
-        Unloaded += (_, _) => _deferredEditorFix?.Stop();
     }
 
-    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        if (MarkdownBody == null)
-            return;
-        MarkdownBody.LayoutUpdated -= OnMarkdownLayoutUpdated;
-        MarkdownBody.LayoutUpdated += OnMarkdownLayoutUpdated;
-        MarkdownBody.PropertyChanged -= OnMarkdownBodyPropertyChanged;
-        MarkdownBody.PropertyChanged += OnMarkdownBodyPropertyChanged;
-        ScheduleFixFencedCodeEditors();
-    }
-
-    private void OnMarkdownBodyPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        if (e.Property?.Name is "Markdown")
-            ScheduleFixFencedCodeEditors();
-    }
-
-    private void OnMarkdownLayoutUpdated(object? sender, EventArgs e)
-    {
-        var now = Environment.TickCount64;
-        if (now - _lastLayoutFixTicks < 80)
-            return;
-        _lastLayoutFixTicks = now;
-        ScheduleFixFencedCodeEditors();
+        if (MarkdownBody != null)
+            MarkdownBody.MarkdownBuilder = _markdownBuilder;
+        HookViewModel();
     }
 
     private void HookViewModel()
     {
-        if (_vm != null)
-            _vm.PropertyChanged -= OnViewModelPropertyChanged;
+        UnhookViewModel();
+        _markdownBuilder.Clear();
+
         _vm = DataContext as ChatMessageViewModel;
-        if (_vm != null)
-            _vm.PropertyChanged += OnViewModelPropertyChanged;
-        ScheduleFixFencedCodeEditors();
+        if (_vm == null)
+            return;
+
+        _vm.MarkdownAppendRequested += OnMarkdownAppendRequested;
+        _vm.MarkdownReplaceRequested += OnMarkdownReplaceRequested;
+        _vm.PropertyChanged += OnViewModelPropertyChanged;
+
+        SyncMarkdownFromViewModel();
+    }
+
+    private void UnhookViewModel()
+    {
+        if (_vm == null)
+            return;
+
+        _vm.MarkdownAppendRequested -= OnMarkdownAppendRequested;
+        _vm.MarkdownReplaceRequested -= OnMarkdownReplaceRequested;
+        _vm.PropertyChanged -= OnViewModelPropertyChanged;
+        _vm = null;
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is null or nameof(ChatMessageViewModel.Text))
-            ScheduleFixFencedCodeEditors();
+        if (e.PropertyName is null ||
+            e.PropertyName is nameof(ChatMessageViewModel.Text) or nameof(ChatMessageViewModel.UsesIncrementalMarkdown))
+            SyncMarkdownFromViewModel();
     }
 
-    private void ScheduleFixFencedCodeEditors()
+    /// <summary>Static bubbles (and catch-up): full replace from <see cref="ChatMessageViewModel.Text"/>.</summary>
+    private void SyncMarkdownFromViewModel()
     {
-        Dispatcher.UIThread.Post(FixFencedCodeEditors, DispatcherPriority.Loaded);
-        Dispatcher.UIThread.Post(FixFencedCodeEditors, DispatcherPriority.Render);
-
-        _deferredEditorFix ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
-        _deferredEditorFix.Tick -= OnDeferredEditorFixTick;
-        _deferredEditorFix.Tick += OnDeferredEditorFixTick;
-        _deferredEditorFix.Stop();
-        _deferredEditorFix.Start();
-    }
-
-    private void OnDeferredEditorFixTick(object? sender, EventArgs e)
-    {
-        _deferredEditorFix?.Stop();
-        FixFencedCodeEditors();
-    }
-
-    private void FixFencedCodeEditors()
-    {
-        if (_fixingEditors || MarkdownBody == null)
+        if (_vm == null || MarkdownBody == null)
             return;
-        _fixingEditors = true;
-        try
+
+        MarkdownBody.MarkdownBuilder = _markdownBuilder;
+
+        if (_vm.UsesIncrementalMarkdown)
         {
-            foreach (var ed in MarkdownBody.GetVisualDescendants().OfType<TextEditor>())
+            // View can attach after the first deferred pushes; replay from canonical Text once.
+            if (_markdownBuilder.Length == 0 && _vm.Text.Length > 0)
             {
-                ed.SyntaxHighlighting = null;
-
-                var tv = ed.TextArea.TextView;
-                var list = tv.LineTransformers;
-                for (var i = list.Count - 1; i >= 0; i--)
-                {
-                    if (list[i] is HighlightingColorizer or RichTextColorizer)
-                        list.RemoveAt(i);
-                }
-
-                ed.Foreground = ChatCodeForeground;
-                ed.Background = ChatCodeBackground;
-                ed.LineNumbersForeground = ChatCodeForeground;
-
-                tv.NonPrintableCharacterBrush = ChatCodeForeground;
-                tv.CurrentLineBackground = Brushes.Transparent;
-
-                for (var i = list.Count - 1; i >= 0; i--)
-                {
-                    if (list[i] is ChatMarkdownCodeForegroundTransformer)
-                        list.RemoveAt(i);
-                }
-
-                list.Add(new ChatMarkdownCodeForegroundTransformer(ChatCodeForeground));
-                tv.Redraw();
+                var replay = ChatMarkdownFenceStrip.StripFenceLanguageLine(_vm.Text);
+                if (replay.Length > 0)
+                    _markdownBuilder.Append(replay);
             }
+
+            return;
         }
-        finally
-        {
-            _fixingEditors = false;
-        }
+
+        var md = ChatMarkdownFenceStrip.StripFenceLanguageLine(_vm.Text);
+        _markdownBuilder.Clear();
+        if (md.Length > 0)
+            _markdownBuilder.Append(md);
     }
 
-    private sealed class ChatMarkdownCodeForegroundTransformer : DocumentColorizingTransformer
+    private void OnMarkdownAppendRequested(string delta)
     {
-        private readonly IBrush _foreground;
+        if (delta.Length > 0)
+            _markdownBuilder.Append(delta);
+    }
 
-        public ChatMarkdownCodeForegroundTransformer(IBrush foreground) =>
-            _foreground = foreground;
-
-        protected override void ColorizeLine(DocumentLine line)
-        {
-            if (line.Length == 0)
-                return;
-            ChangeLinePart(line.Offset, line.EndOffset, element =>
-            {
-                var p = element.TextRunProperties;
-                p.SetForegroundBrush(_foreground);
-                var tf = p.Typeface;
-                p.SetTypeface(new Typeface(tf.FontFamily, FontStyle.Normal, FontWeight.Normal, tf.Stretch));
-            });
-        }
+    private void OnMarkdownReplaceRequested(string fullMarkdown)
+    {
+        _markdownBuilder.Clear();
+        if (fullMarkdown.Length > 0)
+            _markdownBuilder.Append(fullMarkdown);
     }
 }

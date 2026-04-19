@@ -9,6 +9,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://Nodify/Theme.axaml" />
+                <ResourceInclude Source="avares://LiveMarkdown.Avalonia/Defaults.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
             <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
@@ -18,8 +19,7 @@
 
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
-        <!-- Syntax-highlighted fenced code uses AvaloniaEdit; without this appendix, editor colors stay dark-theme while DefaultTheme uses a light code pad — text looks blank. -->
-        <StyleInclude Source="avares://Markdown.Avalonia.SyntaxHigh/StyleCollections/AppendixOfFluentAvalonia.axaml" />
+        <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml" />
 
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Monospace" />

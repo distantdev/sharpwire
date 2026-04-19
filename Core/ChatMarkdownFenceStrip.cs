@@ -1,12 +1,11 @@
-using System;
-using System.Globalization;
 using System.Text.RegularExpressions;
-using Avalonia.Data.Converters;
 
-namespace Sharpwire.Converters;
+namespace Sharpwire.Core;
 
-// Display-only: SyntaxHigh CodePad clips fenced TextEditor when a language label is present; dropping the lang token avoids that.
-public sealed class ChatMarkdownFenceLangStripConverter : IValueConverter
+/// <summary>
+/// Display-only: some markdown renderers clip fenced code headers when a language token is present.
+/// </summary>
+public static class ChatMarkdownFenceStrip
 {
     private static readonly Regex FenceLine = new(
         @"^(?<ind>\s*)(?<fence>`{3,}|~{3,})(?<tail>[^\n\r]*)$",
@@ -16,10 +15,10 @@ public sealed class ChatMarkdownFenceLangStripConverter : IValueConverter
         @"^[\w.#+\-]+$",
         RegexOptions.Compiled);
 
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public static string StripFenceLanguageLine(string? text)
     {
-        if (value is not string text || text.Length == 0)
-            return value ?? string.Empty;
+        if (string.IsNullOrEmpty(text))
+            return text ?? string.Empty;
 
         return FenceLine.Replace(text, m =>
         {
@@ -32,7 +31,4 @@ public sealed class ChatMarkdownFenceLangStripConverter : IValueConverter
             return $"{ind}{fence}";
         });
     }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        throw new NotImplementedException();
 }

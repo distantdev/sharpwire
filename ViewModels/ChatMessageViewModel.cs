@@ -13,6 +13,13 @@ public enum MessageRole
 
 public partial class ChatMessageViewModel : ObservableObject
 {
+    /// <summary>
+    /// When true, the chat bubble feeds LiveMarkdown via append/replace events (streaming).
+    /// When false, full body is synced from <see cref="Text"/>.
+    /// </summary>
+    [ObservableProperty]
+    private bool _usesIncrementalMarkdown;
+
     [ObservableProperty]
     private string _text = string.Empty;
 
@@ -64,4 +71,14 @@ public partial class ChatMessageViewModel : ObservableObject
         MessageRole.Agent => string.IsNullOrWhiteSpace(SenderName) ? "Agent" : SenderName,
         _ => "Unknown"
     };
+
+    /// <summary>Suffix to append to the LiveMarkdown builder (streaming incremental display).</summary>
+    public event Action<string>? MarkdownAppendRequested;
+
+    /// <summary>Replace entire markdown body when display diverges from prefix append (e.g. redaction).</summary>
+    public event Action<string>? MarkdownReplaceRequested;
+
+    internal void RaiseMarkdownAppend(string delta) => MarkdownAppendRequested?.Invoke(delta);
+
+    internal void RaiseMarkdownReplace(string fullDisplay) => MarkdownReplaceRequested?.Invoke(fullDisplay);
 }
